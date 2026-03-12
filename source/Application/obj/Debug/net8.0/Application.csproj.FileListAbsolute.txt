@@ -1,0 +1,16 @@
+X:\Programowanie\Csharp\parking-api\source\Application\bin\Debug\net8.0\Application.deps.json
+X:\Programowanie\Csharp\parking-api\source\Application\bin\Debug\net8.0\Application.dll
+X:\Programowanie\Csharp\parking-api\source\Application\bin\Debug\net8.0\Application.pdb
+X:\Programowanie\Csharp\parking-api\source\Application\bin\Debug\net8.0\Domain.dll
+X:\Programowanie\Csharp\parking-api\source\Application\bin\Debug\net8.0\Domain.pdb
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\Application.csproj.AssemblyReference.cache
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\Application.GeneratedMSBuildEditorConfig.editorconfig
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\Application.AssemblyInfoInputs.cache
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\Application.AssemblyInfo.cs
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\Application.csproj.CoreCompileInputs.cache
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\Application.sourcelink.json
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\Applicat.44B5EDA2.Up2Date
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\Application.dll
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\refint\Application.dll
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\Application.pdb
+X:\Programowanie\Csharp\parking-api\source\Application\obj\Debug\net8.0\ref\Application.dll

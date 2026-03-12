@@ -1,0 +1,12 @@
+X:\Programowanie\Csharp\parking-api\source\Domain\bin\Debug\net8.0\Domain.deps.json
+X:\Programowanie\Csharp\parking-api\source\Domain\bin\Debug\net8.0\Domain.dll
+X:\Programowanie\Csharp\parking-api\source\Domain\bin\Debug\net8.0\Domain.pdb
+X:\Programowanie\Csharp\parking-api\source\Domain\obj\Debug\net8.0\Domain.GeneratedMSBuildEditorConfig.editorconfig
+X:\Programowanie\Csharp\parking-api\source\Domain\obj\Debug\net8.0\Domain.AssemblyInfoInputs.cache
+X:\Programowanie\Csharp\parking-api\source\Domain\obj\Debug\net8.0\Domain.AssemblyInfo.cs
+X:\Programowanie\Csharp\parking-api\source\Domain\obj\Debug\net8.0\Domain.csproj.CoreCompileInputs.cache
+X:\Programowanie\Csharp\parking-api\source\Domain\obj\Debug\net8.0\Domain.sourcelink.json
+X:\Programowanie\Csharp\parking-api\source\Domain\obj\Debug\net8.0\Domain.dll
+X:\Programowanie\Csharp\parking-api\source\Domain\obj\Debug\net8.0\refint\Domain.dll
+X:\Programowanie\Csharp\parking-api\source\Domain\obj\Debug\net8.0\Domain.pdb
+X:\Programowanie\Csharp\parking-api\source\Domain\obj\Debug\net8.0\ref\Domain.dll
