@@ -24,7 +24,7 @@ app.MapGet("/weatherforecast", () =>
       new WeatherForecast
       (
           DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-          Random.Shared.Next(-20, 55),
+          Random.Shared.Next(-30, 55),
           summaries[Random.Shared.Next(summaries.Length)]
       ))
       .ToArray();
