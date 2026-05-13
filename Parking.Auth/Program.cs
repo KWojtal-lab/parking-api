@@ -1,0 +1,272 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Parking.Auth.Data;
+using Parking.Auth.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using System.Text.RegularExpressions;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AuthDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+  {
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 1;
+    options.Password.RequiredUniqueChars = 0;
+  })
+    .AddEntityFrameworkStores<AuthDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddAuthorization();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+await ApplyMigrationsAsync(app);
+await EnsureRolesAsync(app);
+await EnsureOperatorUserAsync(app);
+
+if (app.Environment.IsDevelopment())
+{
+  app.UseSwagger();
+  app.UseSwaggerUI();
+}
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+var authGroup = app.MapGroup("/api/auth");
+
+authGroup.MapPost("register", async (
+    RegisterRequest request,
+    UserManager<ApplicationUser> userManager) =>
+{
+  if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+  {
+    return Results.BadRequest("Email and password are required.");
+  }
+
+  if (!IsValidEmail(request.Email))
+  {
+    return Results.BadRequest("Email is not valid.");
+  }
+
+  var user = new ApplicationUser
+  {
+    UserName = request.Email,
+    Email = request.Email
+  };
+
+  var result = await userManager.CreateAsync(user, request.Password);
+  if (!result.Succeeded)
+  {
+    return Results.BadRequest(result.Errors.Select(error => error.Description));
+  }
+
+  await userManager.AddToRoleAsync(user, "User");
+
+  return Results.Created("/api/auth/register", new RegisterResponse(user.Id, user.Email ?? string.Empty));
+});
+
+authGroup.MapPost("login", async (
+    LoginRequest request,
+    UserManager<ApplicationUser> userManager,
+    IConfiguration configuration) =>
+{
+  var user = await userManager.FindByEmailAsync(request.Email);
+  if (user is null)
+  {
+    return Results.Unauthorized();
+  }
+
+  var validPassword = await userManager.CheckPasswordAsync(user, request.Password);
+  if (!validPassword)
+  {
+    return Results.Unauthorized();
+  }
+
+  var jwtSection = configuration.GetSection("Jwt");
+  var jwtKey = jwtSection["Key"] ?? throw new InvalidOperationException("Jwt:Key configuration is required.");
+  var issuer = jwtSection["Issuer"] ?? "Parking.Auth";
+  var audience = jwtSection["Audience"] ?? "Parking.Api";
+  var expiresMinutes = int.TryParse(jwtSection["TokenLifetimeMinutes"], out var parsed)
+      ? parsed
+      : 60;
+
+  var roles = await userManager.GetRolesAsync(user);
+
+  var claims = new List<Claim>
+    {
+        new(JwtRegisteredClaimNames.Sub, user.Id),
+        new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+        new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new(ClaimTypes.NameIdentifier, user.Id),
+        new(ClaimTypes.Name, user.UserName ?? string.Empty)
+    };
+
+  claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+  var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+  var token = new JwtSecurityToken(
+      issuer: issuer,
+      audience: audience,
+      claims: claims,
+      expires: DateTime.UtcNow.AddMinutes(expiresMinutes),
+      signingCredentials: new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256));
+
+  var tokenValue = new JwtSecurityTokenHandler().WriteToken(token);
+  return Results.Ok(new AuthResponse(tokenValue, token.ValidTo, roles));
+});
+
+var usersGroup = app.MapGroup("/api/users");
+
+usersGroup.MapGet("{userId}/money", async (
+    string userId,
+    UserManager<ApplicationUser> userManager) =>
+{
+  var user = await userManager.FindByIdAsync(userId);
+  if (user is null)
+  {
+    return Results.NotFound();
+  }
+
+  return Results.Ok(new MoneyResponse(user.Id, user.Money));
+});
+
+usersGroup.MapPost("{userId}/money/add", async (
+    string userId,
+    MoneyAdjustmentRequest request,
+    UserManager<ApplicationUser> userManager) =>
+{
+  if (request.Amount <= 0)
+  {
+    return Results.BadRequest("Amount must be greater than zero.");
+  }
+
+  var user = await userManager.FindByIdAsync(userId);
+  if (user is null)
+  {
+    return Results.NotFound();
+  }
+
+  user.Money += request.Amount;
+  var result = await userManager.UpdateAsync(user);
+  if (!result.Succeeded)
+  {
+    return Results.BadRequest(result.Errors.Select(error => error.Description));
+  }
+
+  return Results.Ok(new MoneyResponse(user.Id, user.Money));
+});
+
+usersGroup.MapPost("{userId}/money/subtract", async (
+    string userId,
+    MoneyAdjustmentRequest request,
+    UserManager<ApplicationUser> userManager) =>
+{
+  if (request.Amount <= 0)
+  {
+    return Results.BadRequest("Amount must be greater than zero.");
+  }
+
+  var user = await userManager.FindByIdAsync(userId);
+  if (user is null)
+  {
+    return Results.NotFound();
+  }
+
+  if (user.Money < request.Amount)
+  {
+    return Results.BadRequest("Insufficient funds.");
+  }
+
+  user.Money -= request.Amount;
+  var result = await userManager.UpdateAsync(user);
+  if (!result.Succeeded)
+  {
+    return Results.BadRequest(result.Errors.Select(error => error.Description));
+  }
+
+  return Results.Ok(new MoneyResponse(user.Id, user.Money));
+});
+
+app.Run();
+
+static async Task ApplyMigrationsAsync(WebApplication app)
+{
+  using var scope = app.Services.CreateScope();
+  var dbContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+  await dbContext.Database.MigrateAsync();
+}
+
+static async Task EnsureRolesAsync(WebApplication app)
+{
+  using var scope = app.Services.CreateScope();
+  var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+  foreach (var role in new[] { "User", "Operator" })
+  {
+    if (!await roleManager.RoleExistsAsync(role))
+    {
+      await roleManager.CreateAsync(new IdentityRole(role));
+    }
+  }
+}
+
+static async Task EnsureOperatorUserAsync(WebApplication app)
+{
+  using var scope = app.Services.CreateScope();
+  var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+  const string email = "admin@admin.pl";
+  var existingUser = await userManager.FindByEmailAsync(email);
+  if (existingUser is not null)
+  {
+    if (!await userManager.IsInRoleAsync(existingUser, "Operator"))
+    {
+      await userManager.AddToRoleAsync(existingUser, "Operator");
+    }
+
+    if (!await userManager.CheckPasswordAsync(existingUser, "admin"))
+    {
+      var resetToken = await userManager.GeneratePasswordResetTokenAsync(existingUser);
+      await userManager.ResetPasswordAsync(existingUser, resetToken, "admin");
+    }
+    return;
+  }
+
+  var user = new ApplicationUser
+  {
+    UserName = email,
+    Email = email,
+    EmailConfirmed = true
+  };
+
+  var result = await userManager.CreateAsync(user, "admin");
+  if (result.Succeeded)
+  {
+    await userManager.AddToRoleAsync(user, "Operator");
+  }
+}
+
+static bool IsValidEmail(string email)
+{
+  return Regex.IsMatch(email, "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
+}
+
+public record RegisterRequest(string Email, string Password);
+public record RegisterResponse(string UserId, string Email);
+public record LoginRequest(string Email, string Password);
+public record AuthResponse(string AccessToken, DateTime ExpiresAtUtc, IEnumerable<string> Roles);
+public record MoneyAdjustmentRequest(decimal Amount);
+public record MoneyResponse(string UserId, decimal Money);

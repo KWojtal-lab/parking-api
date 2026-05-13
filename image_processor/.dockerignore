@@ -1,0 +1,15 @@
+# Python cache and bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+
+# Local IDE artifacts
+.vscode/
+.idea/
+
+# NOTE: requirements.txt is intentionally NOT ignored,
+# because Dockerfile installs dependencies from this file.

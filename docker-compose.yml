@@ -1,0 +1,131 @@
+networks:
+  network:
+    driver: bridge
+
+volumes:
+  images-data:
+  pgsql-data:
+
+services:
+  images-init:
+    image: alpine:3.20
+    command: >
+      sh -c "mkdir -p /images/templates /images/real
+      && cp -r /seed/templates/. /images/templates/ 2>/dev/null || true"
+    volumes:
+      - images-data:/images
+      - ./images:/seed:ro
+
+  redis:
+    image: redis:latest
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - network
+
+  pgsql:
+    image: postgres:latest
+    ports:
+      - "${PGSQL_PORT}:${PGSQL_PORT}"
+    environment:
+      - POSTGRES_DB=${PGSQL_DB}
+      - POSTGRES_USER=${PGSQL_USER}
+      - POSTGRES_PASSWORD=${PGSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGSQL_USER} -d ${PGSQL_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    volumes:
+      - pgsql-data:/var/lib/postgresql
+    networks:
+      - network
+
+  auth-api:
+    build:
+      context: ./Parking.Auth
+      dockerfile: Dockerfile
+    image: parking-auth
+    networks:
+      - network
+    ports:
+      - "${AUTH_PORT}:${AUTH_PORT}"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${APP_ENV}
+      - ASPNETCORE_URLS=http://+:${AUTH_PORT}
+      - ConnectionStrings__Postgres=Host=${PGSQL_HOST};Port=${PGSQL_PORT};Database=${PGSQL_AUTH_DB};Username=${PGSQL_USER};Password=${PGSQL_PASSWORD}
+      - Jwt__Issuer=Parking.Auth
+      - Jwt__Audience=Parking.Api
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__TokenLifetimeMinutes=60
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  cv-api:
+    build:
+      context: ./image_processor
+      dockerfile: Dockerfile
+    image: parking-cv
+    networks:
+      - network
+    ports:
+      - "${CV_PORT}:${CV_PORT}"
+    environment:
+      - CV_PORT=${CV_PORT}
+    volumes:
+      - images-data:/app/images
+    depends_on:
+      images-init:
+        condition: service_completed_successfully
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:${CV_PORT}/health')\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  web-api:
+    build:
+      context: ./Parking.Api
+      dockerfile: Dockerfile
+    image: parking-api
+    networks:
+      - network
+    ports:
+      - "${HTTP_PORT}:${HTTP_PORT}"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${APP_ENV}
+      - ASPNETCORE_URLS=http://+:${HTTP_PORT}
+      - ConnectionStrings__Postgres=Host=${PGSQL_HOST};Port=${PGSQL_PORT};Database=${PGSQL_DB};Username=${PGSQL_USER};Password=${PGSQL_PASSWORD}
+      - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT}
+      - ImageProcessor__BaseUrl=http://cv-api:${CV_PORT}
+      - CameraImages__DirectoryPath=/app/images/real
+      - CameraImages__PublicBasePath=/camera-images
+      - Auth__BaseUrl=http://auth-api:${AUTH_PORT}
+      - Jwt__Issuer=Parking.Auth
+      - Jwt__Audience=Parking.Api
+      - Jwt__Key=${JWT_KEY}
+    volumes:
+      - images-data:/app/images
+    depends_on:
+      images-init:
+        condition: service_completed_successfully
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      cv-api:
+        condition: service_healthy

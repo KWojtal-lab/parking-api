@@ -1,0 +1,82 @@
+{
+  "combi": {
+    "topLeft": {
+      "x": 563,
+      "y": 519
+    },
+    "bottomRight": {
+      "x": 724,
+      "y": 557
+    }
+  },
+  "coupe": {
+    "topLeft": {
+      "x": 561,
+      "y": 532
+    },
+    "bottomRight": {
+      "x": 720,
+      "y": 564
+    }
+  },
+  "crossover": {
+    "topLeft": {
+      "x": 565,
+      "y": 508
+    },
+    "bottomRight": {
+      "x": 721,
+      "y": 545
+    }
+  },
+  "hatchback": {
+    "topLeft": {
+      "x": 558,
+      "y": 513
+    },
+    "bottomRight": {
+      "x": 724,
+      "y": 553
+    }
+  },
+  "kabriolet": {
+    "topLeft": {
+      "x": 564,
+      "y": 489
+    },
+    "bottomRight": {
+      "x": 716,
+      "y": 519
+    }
+  },
+  "sedan": {
+    "topLeft": {
+      "x": 566,
+      "y": 485
+    },
+    "bottomRight": {
+      "x": 729,
+      "y": 525
+    }
+  },
+  "suv": {
+    "topLeft": {
+      "x": 569,
+      "y": 490
+    },
+    "bottomRight": {
+      "x": 718,
+      "y": 519
+    }
+  },
+  "van": {
+    "topLeft": {
+      "x": 570,
+      "y": 507
+    },
+    "bottomRight": {
+      "x": 715,
+      "y": 536
+    }
+  }
+}

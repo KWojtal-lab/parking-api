@@ -1,0 +1,34 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parking.Api", "Parking.Api\Parking.Api.csproj", "{27B7223E-C631-210D-C769-014EBF0074BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parking.Auth", "Parking.Auth\Parking.Auth.csproj", "{A91F2F81-5D99-47C5-82E4-9A9054552D4C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{27B7223E-C631-210D-C769-014EBF0074BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27B7223E-C631-210D-C769-014EBF0074BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27B7223E-C631-210D-C769-014EBF0074BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27B7223E-C631-210D-C769-014EBF0074BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A91F2F81-5D99-47C5-82E4-9A9054552D4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A91F2F81-5D99-47C5-82E4-9A9054552D4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A91F2F81-5D99-47C5-82E4-9A9054552D4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A91F2F81-5D99-47C5-82E4-9A9054552D4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4976F46-5104-4F04-A476-509FCEADAD10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4976F46-5104-4F04-A476-509FCEADAD10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4976F46-5104-4F04-A476-509FCEADAD10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4976F46-5104-4F04-A476-509FCEADAD10}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {72AD2EBF-A960-4436-8510-8DBC55B4DAF9}
+	EndGlobalSection
+EndGlobal
