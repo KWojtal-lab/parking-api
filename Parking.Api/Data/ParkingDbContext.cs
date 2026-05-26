@@ -57,6 +57,11 @@ public class ParkingDbContext(DbContextOptions<ParkingDbContext> options) : DbCo
       entity.HasKey(p => new { p.UserId, p.PlateNumber });
       entity.Property(p => p.UserId).HasMaxLength(100);
       entity.Property(p => p.PlateNumber).HasMaxLength(20);
+      entity.Property(p => p.VehicleType)
+              .HasConversion(
+                  value => value.ToString(),
+                  value => ParseVehicleType(value))
+              .HasMaxLength(20);
       entity.HasIndex(p => p.UserId);
     });
 

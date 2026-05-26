@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Parking.Api.Data;
@@ -11,9 +12,11 @@ using Parking.Api.Data;
 namespace Parking.Api.Migrations
 {
     [DbContext(typeof(ParkingDbContext))]
-    partial class ParkingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260526150630_AddUserLicensePlateVehicleType")]
+    partial class AddUserLicensePlateVehicleType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -13,6 +13,13 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 {
   options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
+builder.Services.AddCors(options =>
+{
+  options.AddDefaultPolicy(policy =>
+    policy.AllowAnyOrigin()
+      .AllowAnyHeader()
+      .AllowAnyMethod());
+});
 builder.Services.AddDbContext<ParkingDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -122,6 +129,8 @@ app.UseStaticFiles(new StaticFileOptions
   FileProvider = new PhysicalFileProvider(cameraImagesDirectory),
   RequestPath = "/camera-images"
 });
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();

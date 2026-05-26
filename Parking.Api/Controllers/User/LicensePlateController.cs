@@ -25,10 +25,10 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
     }
 
     var plates = await dbContext.UserLicensePlates
-        .Where(p => p.UserId == userId)
-        .OrderBy(p => p.PlateNumber)
-        .Select(p => p.PlateNumber)
-        .ToListAsync();
+      .Where(p => p.UserId == userId)
+      .OrderBy(p => p.PlateNumber)
+      .Select(p => new LicensePlateResponse(p.PlateNumber, p.VehicleType))
+      .ToListAsync();
 
     return Ok(new LicensePlateListResponse(plates));
   }
@@ -64,12 +64,13 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
     dbContext.UserLicensePlates.Add(new UserLicensePlate
     {
       UserId = userId,
-      PlateNumber = normalizedPlate
+      PlateNumber = normalizedPlate,
+      VehicleType = request.VehicleType
     });
 
     await dbContext.SaveChangesAsync();
 
-    return CreatedAtAction(nameof(GetAll), new { }, new LicensePlateResponse(normalizedPlate));
+    return CreatedAtAction(nameof(GetAll), new { }, new LicensePlateResponse(normalizedPlate, request.VehicleType));
   }
 
   [HttpPut("{plateNumber}")]
@@ -108,7 +109,13 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
 
     if (normalizedOldPlate == normalizedNewPlate)
     {
-      return Ok(new LicensePlateResponse(existing.PlateNumber));
+      if (existing.VehicleType != request.VehicleType)
+      {
+        existing.VehicleType = request.VehicleType;
+        await dbContext.SaveChangesAsync();
+      }
+
+      return Ok(new LicensePlateResponse(existing.PlateNumber, existing.VehicleType));
     }
 
     var duplicate = await dbContext.UserLicensePlates
@@ -123,12 +130,13 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
     dbContext.UserLicensePlates.Add(new UserLicensePlate
     {
       UserId = userId,
-      PlateNumber = normalizedNewPlate
+      PlateNumber = normalizedNewPlate,
+      VehicleType = request.VehicleType
     });
 
     await dbContext.SaveChangesAsync();
 
-    return Ok(new LicensePlateResponse(normalizedNewPlate));
+    return Ok(new LicensePlateResponse(normalizedNewPlate, request.VehicleType));
   }
 
   [HttpDelete("{plateNumber}")]
@@ -175,8 +183,8 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
     return User.FindFirstValue(ClaimTypes.NameIdentifier);
   }
 
-  public record AddLicensePlateRequest(string PlateNumber);
-  public record UpdateLicensePlateRequest(string NewPlateNumber);
-  public record LicensePlateResponse(string PlateNumber);
-  public record LicensePlateListResponse(IEnumerable<string> Plates);
+  public record AddLicensePlateRequest(string PlateNumber, VehicleType VehicleType);
+  public record UpdateLicensePlateRequest(string NewPlateNumber, VehicleType VehicleType);
+  public record LicensePlateResponse(string PlateNumber, VehicleType VehicleType);
+  public record LicensePlateListResponse(IEnumerable<LicensePlateResponse> Plates);
 }
