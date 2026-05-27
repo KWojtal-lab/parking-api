@@ -45,12 +45,12 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
     var normalizedPlate = NormalizePlate(request.PlateNumber);
     if (normalizedPlate is null)
     {
-      return BadRequest("PlateNumber is required.");
+      return BadRequest("Numer rejestracyjny jest wymagany.");
     }
 
     if (!PlateRegex.IsMatch(normalizedPlate))
     {
-      return BadRequest("Provided plate number does not match expected format.");
+      return BadRequest("Podany numer rejestracyjny ma nieprawidłowy format.");
     }
 
     var exists = await dbContext.UserLicensePlates
@@ -58,7 +58,7 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
 
     if (exists)
     {
-      return Conflict("License plate already exists.");
+      return Conflict("Taki numer rejestracyjny już istnieje.");
     }
 
     dbContext.UserLicensePlates.Add(new UserLicensePlate
@@ -85,18 +85,18 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
     var normalizedOldPlate = NormalizePlate(plateNumber);
     if (normalizedOldPlate is null)
     {
-      return BadRequest("Plate number is required.");
+      return BadRequest("Numer rejestracyjny jest wymagany.");
     }
 
     var normalizedNewPlate = NormalizePlate(request.NewPlateNumber);
     if (normalizedNewPlate is null)
     {
-      return BadRequest("NewPlateNumber is required.");
+      return BadRequest("Nowy numer rejestracyjny jest wymagany.");
     }
 
     if (!PlateRegex.IsMatch(normalizedNewPlate))
     {
-      return BadRequest("Provided plate number does not match expected format.");
+      return BadRequest("Podany numer rejestracyjny ma nieprawidłowy format.");
     }
 
     var existing = await dbContext.UserLicensePlates
@@ -104,7 +104,7 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
 
     if (existing is null)
     {
-      return NotFound("License plate not found.");
+      return NotFound("Nie znaleziono numeru rejestracyjnego.");
     }
 
     if (normalizedOldPlate == normalizedNewPlate)
@@ -123,7 +123,7 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
 
     if (duplicate)
     {
-      return Conflict("License plate already exists.");
+      return Conflict("Taki numer rejestracyjny już istnieje.");
     }
 
     dbContext.UserLicensePlates.Remove(existing);
@@ -151,7 +151,7 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
     var normalizedPlate = NormalizePlate(plateNumber);
     if (normalizedPlate is null)
     {
-      return BadRequest("Plate number is required.");
+      return BadRequest("Numer rejestracyjny jest wymagany.");
     }
 
     var existing = await dbContext.UserLicensePlates
@@ -159,7 +159,7 @@ public class LicensePlateController(ParkingDbContext dbContext) : ControllerBase
 
     if (existing is null)
     {
-      return NotFound("License plate not found.");
+      return NotFound("Nie znaleziono numeru rejestracyjnego.");
     }
 
     dbContext.UserLicensePlates.Remove(existing);

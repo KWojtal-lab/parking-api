@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Parking.Auth.Data;
 using Parking.Auth.Models;
+using Parking.Auth.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -24,7 +25,26 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequiredUniqueChars = 0;
   })
     .AddEntityFrameworkStores<AuthDbContext>()
+    .AddErrorDescriber<PolishIdentityErrorDescriber>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddAuthentication()
+    .AddJwtBearer(options =>
+    {
+      var jwtSection = builder.Configuration.GetSection("Jwt");
+      options.TokenValidationParameters = new TokenValidationParameters
+      {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(
+              Encoding.UTF8.GetBytes(jwtSection["Key"] ?? throw new InvalidOperationException("Jwt:Key is required"))),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSection["Issuer"],
+        ValidateAudience = true,
+        ValidAudience = jwtSection["Audience"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+      };
+    });
 
 builder.Services.AddCors(options =>
 {
@@ -43,6 +63,7 @@ var app = builder.Build();
 await ApplyMigrationsAsync(app);
 await EnsureRolesAsync(app);
 await EnsureOperatorUserAsync(app);
+await DbSeeder.SeedAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {
@@ -63,12 +84,12 @@ authGroup.MapPost("register", async (
 {
   if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
   {
-    return Results.BadRequest("Email and password are required.");
+    return Results.BadRequest("Email i hasło są wymagane.");
   }
 
   if (!IsValidEmail(request.Email))
   {
-    return Results.BadRequest("Email is not valid.");
+    return Results.BadRequest("Nieprawidłowy adres email.");
   }
 
   var user = new ApplicationUser
@@ -80,7 +101,7 @@ authGroup.MapPost("register", async (
   var result = await userManager.CreateAsync(user, request.Password);
   if (!result.Succeeded)
   {
-    return Results.BadRequest(result.Errors.Select(error => error.Description));
+    return Results.BadRequest("Ten adres e-mail jest już zajęty.");
   }
 
   await userManager.AddToRoleAsync(user, "User");
@@ -138,6 +159,41 @@ authGroup.MapPost("login", async (
   return Results.Ok(new AuthResponse(tokenValue, token.ValidTo, roles));
 });
 
+authGroup.MapPost("change-password", async (
+    ChangePasswordRequest request,
+    UserManager<ApplicationUser> userManager,
+    ClaimsPrincipal principal) =>
+{
+  var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+  if (userId is null)
+  {
+    return Results.Unauthorized();
+  }
+
+  if (string.IsNullOrWhiteSpace(request.NewPassword))
+  {
+    return Results.BadRequest(new { message = "Nowe hasło jest wymagane." });
+  }
+
+  var user = await userManager.FindByIdAsync(userId);
+  if (user is null)
+  {
+    return Results.NotFound();
+  }
+
+  var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+  if (!result.Succeeded)
+  {
+    var message = string.Join(", ", result.Errors.Select(e => e.Description));
+    return Results.BadRequest(new { message });
+  }
+
+  return Results.NoContent();
+})
+.RequireAuthorization(policy =>
+    policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+          .RequireAuthenticatedUser());
+
 var usersGroup = app.MapGroup("/api/users");
 
 usersGroup.MapGet("{userId}/money", async (
@@ -153,6 +209,19 @@ usersGroup.MapGet("{userId}/money", async (
   return Results.Ok(new MoneyResponse(user.Id, user.Money));
 });
 
+usersGroup.MapGet("{userId}/profile", async (
+    string userId,
+    UserManager<ApplicationUser> userManager) =>
+{
+  var user = await userManager.FindByIdAsync(userId);
+  if (user is null)
+  {
+    return Results.NotFound();
+  }
+
+  return Results.Ok(new UserProfileResponse(user.Id, user.Email ?? string.Empty));
+});
+
 usersGroup.MapPost("{userId}/money/add", async (
     string userId,
     MoneyAdjustmentRequest request,
@@ -160,7 +229,7 @@ usersGroup.MapPost("{userId}/money/add", async (
 {
   if (request.Amount <= 0)
   {
-    return Results.BadRequest("Amount must be greater than zero.");
+    return Results.BadRequest("Kwota musi być większa od zera.");
   }
 
   var user = await userManager.FindByIdAsync(userId);
@@ -186,7 +255,7 @@ usersGroup.MapPost("{userId}/money/subtract", async (
 {
   if (request.Amount <= 0)
   {
-    return Results.BadRequest("Amount must be greater than zero.");
+    return Results.BadRequest("Kwota musi być większa od zera.");
   }
 
   var user = await userManager.FindByIdAsync(userId);
@@ -197,7 +266,7 @@ usersGroup.MapPost("{userId}/money/subtract", async (
 
   if (user.Money < request.Amount)
   {
-    return Results.BadRequest("Insufficient funds.");
+    return Results.BadRequest("Niewystarczające środki.");
   }
 
   user.Money -= request.Amount;
@@ -209,6 +278,8 @@ usersGroup.MapPost("{userId}/money/subtract", async (
 
   return Results.Ok(new MoneyResponse(user.Id, user.Money));
 });
+
+app.MapGet("/health", () => Results.Ok("OK"));
 
 app.Run();
 
@@ -280,3 +351,5 @@ public record LoginRequest(string Email, string Password);
 public record AuthResponse(string AccessToken, DateTime ExpiresAtUtc, IEnumerable<string> Roles);
 public record MoneyAdjustmentRequest(decimal Amount);
 public record MoneyResponse(string UserId, decimal Money);
+public record UserProfileResponse(string UserId, string Email);
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);

@@ -19,7 +19,7 @@ public class StatisticsController(
   {
     if (!TryParsePeriod(period, out var parsedPeriod))
     {
-      return BadRequest("Period must be 'weekly' or 'monthly'.");
+      return BadRequest("Parametr period musi mieć wartość 'weekly' lub 'monthly'.");
     }
 
     var (startDate, endDate, days) = GetDateRange(parsedPeriod);
@@ -53,7 +53,7 @@ public class StatisticsController(
   {
     if (!TryParsePeriod(period, out var parsedPeriod))
     {
-      return BadRequest("Period must be 'weekly' or 'monthly'.");
+      return BadRequest("Parametr period musi mieć wartość 'weekly' lub 'monthly'.");
     }
 
     var (startDate, endDate, days) = GetDateRange(parsedPeriod);

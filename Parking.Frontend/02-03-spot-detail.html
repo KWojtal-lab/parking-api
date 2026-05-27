@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pl-PL">
+<head>
+    <title>Parking+ | Szczegóły miejsca</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="11-resources/01-css/style-operator.css">
+    <link rel="icon" type="image/x-icon" href="11-resources/02-image/temp-favicon.ico">
+    <script type="text/javascript" src="11-resources/05-js/api-client.js"></script>
+    <script type="text/javascript" src="11-resources/05-js/system-status.js"></script>
+    <script type="text/javascript" src="01-pages/02-03-spot-detail/05-js/spot-detail.js"></script>
+</head>
+<body>
+    <header>
+        <section id="header-left">
+            <a class="header-home" href="index.html">
+                <div class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h4a2 2 0 0 1 0 4H9z"/><line x1="9" y1="13" x2="9" y2="17"/>
+                    </svg>
+                </div>
+                <h1 class="title">+gnikraP</h1>
+            </a>
+            <span class="system-label">System zarządzania parkingiem</span>
+        </section>
+        <section id="header-center">
+            <div id="live-cappacity">
+                <span class="dot-live"></span>
+                Live: 27/50
+                <div class="cap-bar"><div class="cap-bar-fill"></div></div>
+                54%
+            </div>
+        </section>
+        <section id="header-right">
+            <div class="user-menu" data-user-menu>
+                <button class="user-menu-trigger" type="button" data-user-trigger>
+                    <span class="user-avatar">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="8" r="4"/>
+                            <path d="M4 20a8 8 0 0 1 16 0"/>
+                        </svg>
+                    </span>
+                    <span class="user-email" data-user-email>Nie zalogowano</span>
+                    <span class="user-chevron">▾</span>
+                </button>
+                <div class="user-menu-dropdown" data-user-dropdown hidden>
+                    <button type="button" data-user-action="settings">Ustawienia</button>
+                    <button type="button" data-user-action="logout">Wyloguj</button>
+                </div>
+            </div>
+        </section>
+    </header>
+
+    <div class="op-layout">
+        <nav class="op-sidebar">
+            <span class="op-sidebar-label">Panel Operatora</span>
+            <a href="02-00-operator-dashboard.html" class="active">&#9783; Dashboard</a>
+            <a href="02-01-operator-reports.html">&#9004; Raporty</a>
+            <a href="02-02-operator-settings.html">&#9881; Ustawienia</a>
+        </nav>
+
+        <main class="op-content">
+            <div class="spot-detail-page">
+
+                <!-- Spot header -->
+                <div class="spot-detail-header">
+                    <span class="spot-number" id="spot-num">Miejsce #—</span>
+                    <span class="spot-badge badge-occupied" id="spot-status">—</span>
+                    <span class="spot-badge badge-std">Standardowe</span>
+                    <a href="02-00-operator-dashboard.html" style="margin-left:auto;font-size:0.82rem;color:#6B7280;text-decoration:none;">&#8592; Powrót</a>
+                </div>
+
+                <!-- Occupied-only sections -->
+                <div id="occupied-section" style="display:none;">
+
+                    <!-- Alert -->
+                    <div class="spot-alert" id="spot-alert" style="display:none;">
+                        <span class="spot-alert-icon">&#9888;</span>
+                        <div>
+                            <strong>Przekroczony czas parkowania!</strong>
+                            Pojazd stoi ponad 12 godzin. Wymagana interwencja.
+                        </div>
+                    </div>
+
+                    <!-- Photo placeholder -->
+                    <div class="spot-photo" id="spot-photo">
+                        📷 Zdjęcie pojazdu
+                    </div>
+
+                    <!-- Active session -->
+                    <div class="session-header">
+                        <span class="session-dot"></span>
+                        Aktywna sesja
+                    </div>
+
+                    <div class="session-grid">
+                        <div class="session-field">
+                            <div class="sf-label">Tablica rejestracyjna</div>
+                            <div class="sf-val" id="session-plate">—</div>
+                        </div>
+                        <div class="session-field">
+                            <div class="sf-label">Typ pojazdu</div>
+                            <div class="sf-val" id="session-vehicle">—</div>
+                        </div>
+                        <div class="session-field">
+                            <div class="sf-label">&#128100; Kierowca</div>
+                            <div class="sf-val" id="session-driver">—</div>
+                        </div>
+                        <div class="session-field">
+                            <div class="sf-label">&#9201; Czas postoju</div>
+                            <div class="sf-val red" id="session-duration">—</div>
+                        </div>
+                    </div>
+
+                    <div class="session-time-full">
+                        <div class="sf-label">&#9201; Czas wjazdu</div>
+                        <div class="sf-val" id="session-start">—</div>
+                    </div>
+
+                    <!-- Fee alert -->
+                    <div class="fee-alert">
+                        <span class="fee-label">&#9888; Aktualna opłata</span>
+                        <span class="fee-amount" id="session-fee">—</span>
+                    </div>
+
+                    <!-- Operator actions -->
+                    <div class="operator-actions">
+                        <button class="btn-op-free" id="mark-free-btn">&#10003; Oznacz jako wolne</button>
+                        <p id="mark-free-error" style="color:#EF4444;font-size:0.85rem;margin-top:6px;display:none;"></p>
+                    </div>
+
+                </div>
+
+                <!-- History -->
+                <div class="history-title">
+                    Historia miejsca
+                    <span class="history-count" id="history-count">0 SESJI</span>
+                </div>
+
+                <div class="history-table-header">
+                    <span>Tablica</span>
+                    <span>OD</span>
+                    <span>DO</span>
+                </div>
+
+                <div id="spot-history"></div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="11-resources/05-js/user-menu.js"></script>
+</body>
+</html>

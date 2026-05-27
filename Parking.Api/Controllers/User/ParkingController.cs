@@ -38,22 +38,22 @@ public class ParkingController(
 
     if (string.IsNullOrWhiteSpace(request.PlateNumber))
     {
-      return BadRequest("PlateNumber is required.");
+      return BadRequest("Numer rejestracyjny jest wymagany.");
     }
 
     var normalizedPlate = request.PlateNumber.Trim().ToUpperInvariant();
 
     if (!PlateRegex.IsMatch(normalizedPlate))
     {
-      return BadRequest("Provided plate number does not match expected format.");
+      return BadRequest("Podany numer rejestracyjny ma nieprawidłowy format.");
     }
 
-    var hasPlate = await dbContext.UserLicensePlates
-        .AnyAsync(p => p.UserId == userId && p.PlateNumber == normalizedPlate);
+    var userPlate = await dbContext.UserLicensePlates
+        .FirstOrDefaultAsync(p => p.UserId == userId && p.PlateNumber == normalizedPlate);
 
-    if (!hasPlate)
+    if (userPlate is null)
     {
-      return BadRequest("License plate is not registered for this user.");
+      return BadRequest("Numer rejestracyjny nie jest przypisany do tego użytkownika.");
     }
 
     var activeSessions = await dbContext.ParkingSessions
@@ -64,17 +64,17 @@ public class ParkingController(
     var totalSpots = await dbContext.ParkingSpots.CountAsync();
     if (activeSessions.Count >= totalSpots)
     {
-      return Conflict("Parking is full.");
+      return Conflict("Parking jest pełny.");
     }
 
     if (activeSessions.Any(s => s.UserId == userId))
     {
-      return Conflict("User already has an active parking session.");
+      return Conflict("Użytkownik ma już aktywną sesję parkowania.");
     }
 
     if (activeSessions.Any(s => s.PlateNumber == normalizedPlate))
     {
-      return Conflict("Vehicle already has an active parking session.");
+      return Conflict("Pojazd ma już aktywną sesję parkowania.");
     }
 
     var occupiedSpots = activeSessions.Select(s => s.SpotNumber).ToHashSet();
@@ -82,18 +82,19 @@ public class ParkingController(
     var freeSpots = allSpots.Where(spot => !occupiedSpots.Contains(spot)).ToArray();
 
     var assignedSpot = freeSpots[Random.Shared.Next(freeSpots.Length)];
+    var vehicleType = userPlate.VehicleType;
 
     try
     {
       await imageProcessorClient.GeneratePlateImageAsync(
-        request.VehicleType.ToString().ToLowerInvariant(),
+        vehicleType.ToString().ToLowerInvariant(),
         normalizedPlate,
         assignedSpot,
         HttpContext.RequestAborted);
     }
     catch (Exception)
     {
-      return StatusCode(StatusCodes.Status502BadGateway, "Unable to generate camera image for this parking entry.");
+      return StatusCode(StatusCodes.Status502BadGateway, "Nie udało się wygenerować obrazu z kamery dla tego wjazdu.");
     }
 
     var vehicle = await dbContext.Vehicles.FindAsync(normalizedPlate);
@@ -102,13 +103,13 @@ public class ParkingController(
       vehicle = new Vehicle
       {
         PlateNumber = normalizedPlate,
-        VehicleType = request.VehicleType
+        VehicleType = vehicleType
       };
       dbContext.Vehicles.Add(vehicle);
     }
     else
     {
-      vehicle.VehicleType = request.VehicleType;
+      vehicle.VehicleType = vehicleType;
     }
 
     var session = new ParkingSession
@@ -141,13 +142,14 @@ public class ParkingController(
     }
 
     var session = await dbContext.ParkingSessions
+        .Include(s => s.Vehicle)
         .Where(s => s.UserId == userId && s.EndTime == null)
         .OrderByDescending(s => s.StartTime)
         .FirstOrDefaultAsync();
 
     if (session is null)
     {
-      return NotFound("No active session found for user.");
+      return NotFound("Nie znaleziono aktywnej sesji dla użytkownika.");
     }
 
     session.EndTime = DateTime.UtcNow;
@@ -175,7 +177,8 @@ public class ParkingController(
     return Ok(new ParkingExitResponse(
       totalFee,
       totalDuration,
-      session.PlateNumber));
+      session.PlateNumber,
+      session.Vehicle?.VehicleType));
   }
 
   [HttpGet("current-session")]
@@ -202,7 +205,7 @@ public class ParkingController(
 
     if (session is null)
     {
-      return NotFound("No active session found for user.");
+      return NotFound("Nie znaleziono aktywnej sesji dla użytkownika.");
     }
 
     var now = DateTime.UtcNow;
@@ -241,6 +244,7 @@ public class ParkingController(
         {
           s.Id,
           s.PlateNumber,
+          VehicleType = s.Vehicle != null ? (VehicleType?)s.Vehicle.VehicleType : null,
           s.SpotNumber,
           s.StartTime,
           EndTime = s.EndTime!.Value
@@ -252,6 +256,7 @@ public class ParkingController(
     var response = sessions.Select(s => new MyHistoryItemResponse(
         s.Id,
         s.PlateNumber,
+        s.VehicleType,
         s.SpotNumber,
         s.StartTime,
         s.EndTime,
@@ -320,10 +325,10 @@ public class ParkingController(
     }
   }
 
-  public record ParkingEntryRequest(string PlateNumber, VehicleType VehicleType);
+  public record ParkingEntryRequest(string PlateNumber);
   public record ParkingEntryResponse(Guid SessionId, int SpotNumber, DateTime StartTime);
-  public record ParkingExitResponse(decimal TotalFee, TimeSpan TotalDuration, string LicensePlate);
+  public record ParkingExitResponse(decimal TotalFee, TimeSpan TotalDuration, string LicensePlate, VehicleType? VehicleType);
   public record MyActiveSessionResponse(Guid SessionId, string PlateNumber, VehicleType? VehicleType, int SpotNumber, DateTime StartTime, TimeSpan CurrentDuration, decimal CurrentFee);
-  public record MyHistoryItemResponse(Guid SessionId, string PlateNumber, int SpotNumber, DateTime StartTime, DateTime EndTime, TimeSpan TotalDuration, decimal TotalFee);
+  public record MyHistoryItemResponse(Guid SessionId, string PlateNumber, VehicleType? VehicleType, int SpotNumber, DateTime StartTime, DateTime EndTime, TimeSpan TotalDuration, decimal TotalFee);
   private sealed record MoneyAdjustmentRequest(decimal Amount);
 }

@@ -129,3 +129,20 @@ services:
         condition: service_healthy
       cv-api:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: ./Parking.Frontend
+      dockerfile: Dockerfile
+    image: parking-frontend
+    networks:
+      - network
+    ports:
+      - "3000:80"
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      cv-api:
+        condition: service_healthy

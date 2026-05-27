@@ -1,0 +1,1 @@
+The website folder structure is from https://practicalseries.com/1001-webdevelopment/04-02-starting.html

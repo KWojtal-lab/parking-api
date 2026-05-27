@@ -16,7 +16,10 @@ namespace Parking.Api.Migrations
                 type: "character varying(20)",
                 maxLength: 20,
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "Sedan");
+
+            migrationBuilder.Sql(
+                "UPDATE \"UserLicensePlates\" SET \"VehicleType\" = 'Sedan' WHERE \"VehicleType\" = ''");
         }
 
         /// <inheritdoc />

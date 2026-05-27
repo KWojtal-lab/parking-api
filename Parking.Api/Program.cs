@@ -114,6 +114,7 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 await ApplyMigrationsAsync(app);
+await DbSeeder.SeedAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {
@@ -136,6 +137,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapGet("/health", () => Results.Ok("OK"));
 
 app.Run();
 

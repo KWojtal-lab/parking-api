@@ -1,0 +1,4 @@
+/* Landing page — lighter, more vivid purple gradient (distinct from login) */
+body {
+  background: linear-gradient(180deg, #3632C4 0%, #1A1490 40%, #060450 100%);
+}
