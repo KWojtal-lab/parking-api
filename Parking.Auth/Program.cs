@@ -285,9 +285,29 @@ app.Run();
 
 static async Task ApplyMigrationsAsync(WebApplication app)
 {
+  const int maxRetries = 10;
+  const int delayMs    = 3000;
+
   using var scope = app.Services.CreateScope();
-  var dbContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-  await dbContext.Database.MigrateAsync();
+  var dbContext   = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+  var logger      = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+  for (int attempt = 1; attempt <= maxRetries; attempt++)
+  {
+    try
+    {
+      await dbContext.Database.MigrateAsync();
+      return;
+    }
+    catch (Exception ex) when (attempt < maxRetries)
+    {
+      logger.LogWarning("Migration attempt {Attempt}/{Max} failed: {Message}. Retrying in {Delay}ms…",
+          attempt, maxRetries, ex.Message, delayMs);
+      await Task.Delay(delayMs);
+    }
+  }
+
+  await dbContext.Database.MigrateAsync(); // ostatnia próba — rzuci wyjątek jeśli nadal nie działa
 }
 
 static async Task EnsureRolesAsync(WebApplication app)

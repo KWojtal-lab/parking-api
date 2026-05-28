@@ -30,7 +30,7 @@ async function loadParkingState() {
             taken = parkingState.takenSpaces;
         }
 
-        let free = Number(getStateField(payload, ["freeSpaces", "free", "available"], parkingState.freeSpaces));
+        let free = Number(getStateField(payload, ["freeSpaces", "free", "available"], undefined));
         if (!Number.isFinite(free)) {
             free = Number.isFinite(total) ? Math.max(total - taken, 0) : parkingState.freeSpaces;
         }
@@ -89,7 +89,6 @@ function renderIndexStatus() {
 }
 
 function badgeSystemStatusFunction() {
-    renderBadgeStatus();
     loadParkingState().then(renderBadgeStatus);
 }
 
